@@ -27,3 +27,4 @@ Thumbs.db
 *.pdf
 *.tex
 thesis_export/
+data/
