@@ -7,7 +7,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from thesis.database import ThesisDatabase
+from thesis.database import Database
 from thesis.config import Config
 from thesis.modules.searcher import PaperSearcher
 from thesis.modules.reference_manager import ReferenceManager
@@ -24,11 +24,11 @@ def create_app(config=None):
     app.config['SECRET_KEY'] = os.urandom(24).hex()
 
     cfg = Config()
-    db = ThesisDatabase(cfg.get('database_path', 'thesis_master.db'))
+    db = Database()
     searcher = PaperSearcher()
-    ref_manager = ReferenceManager(db)
+    ref_manager = ReferenceManager()
     citation_gen = CitationGenerator()
-    ai = AIAssistant(cfg)
+    ai = AIAssistant()
     project = ProjectManager(db)
     exporter = ThesisExporter(db)
 

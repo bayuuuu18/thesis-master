@@ -116,3 +116,22 @@ def update_config(updates: dict) -> None:
     for key, value in updates.items():
         env_key = key.upper()
         os.environ[env_key] = str(value)
+
+
+class Config:
+    """Simple config wrapper for CLI usage."""
+    def __init__(self):
+        load_env()
+    
+    def get(self, key: str, default=None):
+        mapping = {
+            'database_path': DATABASE_PATH,
+            'openai_api_key': get_openai_key(),
+            'ai_provider': AI_PROVIDER,
+            'openai_model': OPENAI_MODEL,
+            'ollama_base_url': OLLAMA_BASE_URL,
+            'ollama_model': OLLAMA_MODEL,
+            'ai_max_tokens': AI_MAX_TOKENS,
+            'ai_temperature': AI_TEMPERATURE,
+        }
+        return mapping.get(key, default)

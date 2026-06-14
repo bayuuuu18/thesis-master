@@ -46,6 +46,8 @@ def init_database() -> None:
             notes TEXT,
             pdf_path TEXT,
             source TEXT,
+            citation_format TEXT,
+            citation_text TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -58,22 +60,7 @@ def init_database() -> None:
             note_type TEXT DEFAULT 'general',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (reference_id) REFERENCES references_table(id) ON DELETE SET NULL,
-            FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE SET NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS chapters (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            chapter_number INTEGER NOT NULL,
-            content TEXT DEFAULT '',
-            status TEXT DEFAULT 'draft' CHECK(status IN ('outline', 'draft', 'review', 'final')),
-            word_count INTEGER DEFAULT 0,
-            deadline TEXT,
-            notes TEXT,
-            sort_order INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            FOREIGN KEY (reference_id) REFERENCES references_table(id) ON DELETE SET NULL
         );
 
         CREATE TABLE IF NOT EXISTS citations (
@@ -86,32 +73,9 @@ def init_database() -> None:
             FOREIGN KEY (reference_id) REFERENCES references_table(id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS milestones (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            description TEXT,
-            deadline TEXT,
-            completed INTEGER DEFAULT 0,
-            completed_at TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS todos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chapter_id INTEGER,
-            task TEXT NOT NULL,
-            completed INTEGER DEFAULT 0,
-            priority TEXT DEFAULT 'medium' CHECK(priority IN ('low', 'medium', 'high')),
-            due_date TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE SET NULL
-        );
-
         CREATE INDEX IF NOT EXISTS idx_refs_doi ON references_table(doi);
         CREATE INDEX IF NOT EXISTS idx_refs_year ON references_table(year);
         CREATE INDEX IF NOT EXISTS idx_refs_title ON references_table(title);
-        CREATE INDEX IF NOT EXISTS idx_chapters_number ON chapters(chapter_number);
-        CREATE INDEX IF NOT EXISTS idx_todos_chapter ON todos(chapter_id);
     """)
 
     conn.commit()
