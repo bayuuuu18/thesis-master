@@ -29,7 +29,7 @@ Examples:
     # Search
     sp_search = sub.add_parser('search', help='Cari paper dari arXiv/Semantic Scholar/CrossRef')
     sp_search.add_argument('query', help='Query pencarian')
-    sp_search.add_argument('--source', choices=['arxiv', 'semantic_scholar', 'crossref', 'all'], default='arxiv')
+    sp_search.add_argument('--source', choices=['arxiv', 'semantic_scholar', 'crossref', 'google_scholar', 'garuda', 'all'], default='arxiv')
     sp_search.add_argument('--limit', type=int, default=10)
     sp_search.add_argument('--save', action='store_true', help='Simpan hasil ke referensi')
 

@@ -89,6 +89,8 @@ class PaperSearcher:
             "arxiv": self._search_arxiv,
             "semantic_scholar": self._search_semantic_scholar,
             "crossref": self._search_crossref,
+            "google_scholar": self._search_google_scholar,
+            "garuda": self._search_garuda,
         }
 
         if source == "all":
@@ -105,7 +107,7 @@ class PaperSearcher:
             results = source_map[source](query, limit=limit, year_from=year_from,
                                           year_to=year_to, authors=authors)
         else:
-            raise ValueError(f"Unknown source: {source}. Use: arxiv, semantic_scholar, crossref, all")
+            raise ValueError(f"Unknown source: {source}. Use: arxiv, semantic_scholar, crossref, google_scholar, garuda, all")
 
         # Deduplicate by title similarity
         results = self._deduplicate(results)
@@ -273,6 +275,98 @@ class PaperSearcher:
                     ))
         except Exception as e:
             print(f"CrossRef search error: {e}")
+        return papers
+
+    def _search_google_scholar(self, query: str, limit: int = 20, **kwargs) -> List[Paper]:
+        """Search Google Scholar using scholarly library."""
+        papers = []
+        try:
+            from scholarly import scholarly
+            search_results = scholarly.search_pubs(query)
+            count = 0
+            for result in search_results:
+                if count >= limit:
+                    break
+                try:
+                    bib = result.get('bib', {})
+                    title = bib.get('title', '')
+                    authors = ', '.join(bib.get('author', []))
+                    year = bib.get('pub_year')
+                    if year:
+                        year = int(year)
+                    abstract = bib.get('abstract', '')
+                    journal = bib.get('journal', '') or bib.get('venue', '')
+                    volume = bib.get('volume', '')
+                    pages = bib.get('pages', '')
+                    url = result.get('pub_url', '') or result.get('eprint_url', '')
+                    citation_count = result.get('num_citations', 0)
+
+                    papers.append(Paper(
+                        title=title,
+                        authors=authors,
+                        year=year,
+                        abstract=abstract,
+                        url=url,
+                        journal=journal,
+                        volume=volume,
+                        pages=pages,
+                        citation_count=citation_count,
+                        source="google_scholar",
+                    ))
+                    count += 1
+                except Exception:
+                    continue
+        except ImportError:
+            print("Warning: scholarly not installed. Install with: pip install scholarly")
+        except Exception as e:
+            print(f"Google Scholar search error: {e}")
+        return papers
+
+    def _search_garuda(self, query: str, limit: int = 20, **kwargs) -> List[Paper]:
+        """Search Indonesian academic papers via Google Scholar (Indonesian journals focus)."""
+        papers = []
+        try:
+            from scholarly import scholarly
+            # Add site filter for Indonesian journals
+            indo_query = f'{query} site:garuda.kemdikbud.go.id OR site:jurnal.uns.ac.id OR site:jurnal.ugm.ac.id OR site:jurnal.ui.ac.id OR "jurnal indonesia"'
+            search_results = scholarly.search_pubs(indo_query)
+            count = 0
+            for result in search_results:
+                if count >= limit:
+                    break
+                try:
+                    bib = result.get('bib', {})
+                    title = bib.get('title', '')
+                    authors = ', '.join(bib.get('author', []))
+                    year = bib.get('pub_year')
+                    if year:
+                        year = int(year)
+                    abstract = bib.get('abstract', '')
+                    journal = bib.get('journal', '') or bib.get('venue', '')
+                    volume = bib.get('volume', '')
+                    pages = bib.get('pages', '')
+                    url = result.get('pub_url', '') or result.get('eprint_url', '')
+                    citation_count = result.get('num_citations', 0)
+
+                    papers.append(Paper(
+                        title=title,
+                        authors=authors,
+                        year=year,
+                        abstract=abstract,
+                        url=url,
+                        journal=journal,
+                        volume=volume,
+                        pages=pages,
+                        citation_count=citation_count,
+                        source="garuda",
+                    ))
+                    count += 1
+                except Exception:
+                    continue
+        except ImportError:
+            print("Warning: scholarly not installed. Install with: pip install scholarly")
+        except Exception as e:
+            print(f"Garuda search error: {e}")
         return papers
 
     def _deduplicate(self, papers: List[Paper]) -> List[Paper]:
