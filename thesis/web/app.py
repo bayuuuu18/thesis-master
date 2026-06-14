@@ -75,8 +75,9 @@ def create_app(config=None):
         source = data.get('source', 'arxiv')
         limit = data.get('limit', 10)
         try:
-            results = searcher.search(query, source=source, max_results=limit)
-            return jsonify({'success': True, 'results': results})
+            results = searcher.search(query, source=source, limit=limit)
+            results_dict = [r.to_dict() for r in results]
+            return jsonify({'success': True, 'results': results_dict})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)}), 500
 
