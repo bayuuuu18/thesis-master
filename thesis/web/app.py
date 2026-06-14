@@ -65,7 +65,7 @@ def create_app(config=None):
 
     @app.route('/settings')
     def settings():
-        return render_template('settings.html', config=cfg.config)
+        return render_template('settings.html', config=cfg.get_config())
 
     # --- API Routes ---
     @app.route('/api/search', methods=['POST'])
