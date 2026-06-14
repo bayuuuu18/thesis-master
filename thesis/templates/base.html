@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Thesis Master{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' },
+                        dark: { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',700:'#334155',800:'#1e293b',900:'#0f172a' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark-900 text-gray-200 min-h-screen">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-dark-800 border-r border-dark-700 flex flex-col">
+            <div class="p-6 border-b border-dark-700">
+                <h1 class="text-xl font-bold text-primary-400">
+                    <i class="fas fa-graduation-cap mr-2"></i>Thesis Master
+                </h1>
+                <p class="text-xs text-gray-500 mt-1">All-in-One Thesis Toolkit</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-1">
+                <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                    <i class="fas fa-chart-pie w-5"></i> Dashboard
+                </a>
+                <a href="/references" class="nav-link {% if request.path == '/references' %}active{% endif %}">
+                    <i class="fas fa-book w-5"></i> Referensi
+                </a>
+                <a href="/search" class="nav-link {% if request.path == '/search' %}active{% endif %}">
+                    <i class="fas fa-search w-5"></i> Cari Paper
+                </a>
+                <a href="/writer" class="nav-link {% if request.path == '/writer' %}active{% endif %}">
+                    <i class="fas fa-pen-fancy w-5"></i> Penulis
+                </a>
+                <a href="/citations" class="nav-link {% if request.path == '/citations' %}active{% endif %}">
+                    <i class="fas fa-quote-right w-5"></i> Sitasi
+                </a>
+                <a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}">
+                    <i class="fas fa-cog w-5"></i> Pengaturan
+                </a>
+            </nav>
+            <div class="p-4 border-t border-dark-700">
+                <p class="text-xs text-gray-600">v1.0.0 — Semangat Skripsi! 💪</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto">
+            <div class="p-8">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

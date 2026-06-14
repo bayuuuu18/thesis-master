@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Sitasi — Thesis Master{% endblock %}
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-3xl font-bold text-white">Generator Sitasi</h2>
+    <p class="text-gray-400 mt-1">Buat sitasi dari DOI, ISBN, atau input manual</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Input -->
+    <div class="bg-dark-800 rounded-xl border border-dark-700 p-6">
+        <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-input mr-2 text-primary-400"></i>Input</h3>
+
+        <!-- Tab buttons -->
+        <div class="flex gap-2 mb-6">
+            <button onclick="switchTab('doi')" id="tab-doi" class="tab-btn active bg-primary-600 px-4 py-2 rounded-lg text-white text-sm">DOI</button>
+            <button onclick="switchTab('isbn')" id="tab-isbn" class="tab-btn bg-dark-700 px-4 py-2 rounded-lg text-gray-400 text-sm">ISBN</button>
+            <button onclick="switchTab('manual')" id="tab-manual" class="tab-btn bg-dark-700 px-4 py-2 rounded-lg text-gray-400 text-sm">Manual</button>
+        </div>
+
+        <!-- DOI Tab -->
+        <div id="input-doi" class="tab-content">
+            <input type="text" id="doi-input" placeholder="contoh: 10.1038/s41586-020-2649-2"
+                class="w-full bg-dark-700 border border-dark-700 rounded-lg px-4 py-3 text-white mb-4">
+        </div>
+
+        <!-- ISBN Tab -->
+        <div id="input-isbn" class="tab-content hidden">
+            <input type="text" id="isbn-input" placeholder="contoh: 978-0134685991"
+                class="w-full bg-dark-700 border border-dark-700 rounded-lg px-4 py-3 text-white mb-4">
+        </div>
+
+        <!-- Manual Tab -->
+        <div id="input-manual" class="tab-content hidden">
+            <input type="text" id="m-title" placeholder="Judul" class="w-full bg-dark-700 border border-dark-700 rounded-lg px-4 py-3 text-white mb-3">
+            <input type="text" id="m-authors" placeholder="Penulis (pisahkan koma)" class="w-full bg-dark-700 border border-dark-700 rounded-lg px-4 py-3 text-white mb-3">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <input type="text" id="m-year" placeholder="Tahun" class="bg-dark-700 border border-dark-700 rounded-lg px-4 py-3 text-white">
+                <input type="text" id="m-journal" placeholder="Jurnal/Publisher" class="bg-dark-700 border border-dark-700 rounded-lg px-4 py-3 text-white">
+            </div>
+            <input type="text" id="m-doi" placeholder="DOI (opsional)" class="w-full bg-dark-700 border border-dark-700 rounded-lg px-4 py-3 text-white mb-4">
+        </div>
+
+        <!-- Style Select -->
+        <div class="mb-4">
+            <label class="text-sm text-gray-400 mb-2 block">Format Sitasi</label>
+            <select id="cite-style" class="w-full bg-dark-700 border border-dark-700 rounded-lg px-4 py-3 text-white">
+                <option value="apa">APA 7th Edition</option>
+                <option value="ieee">IEEE</option>
+                <option value="chicago">Chicago</option>
+                <option value="harvard">Harvard</option>
+                <option value="vancouver">Vancouver</option>
+            </select>
+        </div>
+
+        <button onclick="generateCitation()" class="w-full bg-primary-600 hover:bg-primary-700 px-6 py-3 rounded-lg text-white font-medium">
+            <i class="fas fa-magic mr-2"></i>Generate Sitasi
+        </button>
+    </div>
+
+    <!-- Output -->
+    <div class="bg-dark-800 rounded-xl border border-dark-700 p-6">
+        <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-quote-right mr-2 text-green-400"></i>Hasil</h3>
+
+        <div id="cite-loading" class="hidden text-center py-8">
+            <i class="fas fa-spinner fa-spin text-2xl text-primary-400"></i>
+        </div>
+
+        <div id="cite-result" class="bg-dark-700 rounded-lg p-4 min-h-[100px]">
+            <p class="text-gray-500 text-sm">Hasil sitasi akan muncul di sini...</p>
+        </div>
+
+        <div class="flex gap-3 mt-4">
+            <button onclick="copyCitation()" class="flex-1 bg-dark-700 hover:bg-dark-600 px-4 py-2 rounded-lg text-white text-sm">
+                <i class="fas fa-copy mr-2"></i>Copy
+            </button>
+            <button onclick="saveCitation()" class="flex-1 bg-green-600/20 text-green-400 hover:bg-green-600/30 px-4 py-2 rounded-lg text-sm">
+                <i class="fas fa-save mr-2"></i>Simpan ke Referensi
+            </button>
+        </div>
+
+        <!-- History -->
+        <div class="mt-6 border-t border-dark-700 pt-4">
+            <h4 class="text-sm text-gray-400 mb-3">Riwayat Sitasi</h4>
+            <div id="cite-history" class="space-y-2 text-sm">
+                <p class="text-gray-600">Belum ada riwayat</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let lastCitation = '';
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => { b.className = 'tab-btn bg-dark-700 px-4 py-2 rounded-lg text-gray-400 text-sm'; });
+    document.getElementById('tab-'+tab).className = 'tab-btn active bg-primary-600 px-4 py-2 rounded-lg text-white text-sm';
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    document.getElementById('input-'+tab).classList.remove('hidden');
+}
+
+function generateCitation() {
+    const activeTab = document.querySelector('.tab-btn.active').id.replace('tab-','');
+    let body = {style: document.getElementById('cite-style').value};
+
+    if(activeTab === 'doi') {
+        body.doi = document.getElementById('doi-input').value;
+    } else if(activeTab === 'isbn') {
+        body.isbn = document.getElementById('isbn-input').value;
+    } else {
+        body = {...body, title: document.getElementById('m-title').value, authors: document.getElementById('m-authors').value,
+            year: document.getElementById('m-year').value, journal: document.getElementById('m-journal').value, doi: document.getElementById('m-doi').value};
+    }
+
+    document.getElementById('cite-loading').classList.remove('hidden');
+    fetch('/api/cite', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})
+    .then(r=>r.json()).then(d=>{
+        document.getElementById('cite-loading').classList.add('hidden');
+        if(d.success) {
+            lastCitation = d.citation;
+            document.getElementById('cite-result').innerHTML = `<p class="text-white text-sm leading-relaxed">${d.citation}</p>`;
+            const hist = document.getElementById('cite-history');
+            if(hist.querySelector('p.text-gray-600')) hist.innerHTML = '';
+            hist.innerHTML = `<div class="p-2 bg-dark-600 rounded text-gray-300 text-xs mb-2">${d.citation.substring(0,80)}...</div>` + hist.innerHTML;
+        } else {
+            document.getElementById('cite-result').innerHTML = `<p class="text-red-400 text-sm">${d.error}</p>`;
+        }
+    });
+}
+
+function copyCitation() {
+    if(!lastCitation) return;
+    navigator.clipboard.writeText(lastCitation).then(()=>alert('Copied!'));
+}
+
+function saveCitation() {
+    if(!lastCitation) return;
+    alert('Saved to references!');
+}
+</script>
+{% endblock %}

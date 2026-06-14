@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Cari Paper — Thesis Master{% endblock %}
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-3xl font-bold text-white">Cari Paper</h2>
+    <p class="text-gray-400 mt-1">Cari dari arXiv, Semantic Scholar, dan CrossRef</p>
+</div>
+
+<!-- Search Bar -->
+<div class="flex gap-3 mb-8">
+    <input type="text" id="search-query" placeholder="Masukkan topik penelitian..." onkeydown="if(event.key==='Enter')doSearch()"
+        class="flex-1 bg-dark-800 border border-dark-700 rounded-xl px-5 py-3 text-white focus:border-primary-500 focus:outline-none">
+    <select id="search-source" class="bg-dark-800 border border-dark-700 rounded-xl px-4 py-3 text-white">
+        <option value="arxiv">arXiv</option>
+        <option value="semantic_scholar">Semantic Scholar</option>
+        <option value="crossref">CrossRef</option>
+    </select>
+    <button onclick="doSearch()" class="bg-primary-600 hover:bg-primary-700 px-6 py-3 rounded-xl text-white font-medium">
+        <i class="fas fa-search mr-2"></i>Cari
+    </button>
+</div>
+
+<!-- Loading -->
+<div id="loading" class="hidden text-center py-12">
+    <i class="fas fa-spinner fa-spin text-3xl text-primary-400"></i>
+    <p class="text-gray-400 mt-3">Mencari paper...</p>
+</div>
+
+<!-- Results -->
+<div id="search-results" class="space-y-4"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function doSearch() {
+    const query = document.getElementById('search-query').value;
+    const source = document.getElementById('search-source').value;
+    if (!query) return;
+
+    document.getElementById('loading').classList.remove('hidden');
+    document.getElementById('search-results').innerHTML = '';
+
+    fetch('/api/search', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({query, source, limit: 15})
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('loading').classList.add('hidden');
+        if (!data.success) { alert('Error: ' + data.error); return; }
+        const container = document.getElementById('search-results');
+        data.results.forEach(p => {
+            container.innerHTML += `
+            <div class="bg-dark-800 rounded-xl border border-dark-700 p-6">
+                <h4 class="text-white font-semibold text-lg">${p.title}</h4>
+                <p class="text-gray-400 text-sm mt-1">${p.authors || 'Unknown'} ${p.year ? '('+p.year+')' : ''}</p>
+                ${p.abstract ? `<p class="text-gray-300 text-sm mt-3 line-clamp-3">${p.abstract.substring(0,300)}...</p>` : ''}
+                <div class="flex gap-3 mt-4">
+                    ${p.doi ? `<a href="https://doi.org/${p.doi}" target="_blank" class="text-primary-400 hover:underline text-sm"><i class="fas fa-external-link-alt mr-1"></i>DOI</a>` : ''}
+                    ${p.url ? `<a href="${p.url}" target="_blank" class="text-primary-400 hover:underline text-sm"><i class="fas fa-link mr-1"></i>Link</a>` : ''}
+                    <button onclick="saveRef(${JSON.stringify(p).replace(/"/g,'&quot;')})" class="text-green-400 hover:text-green-300 text-sm"><i class="fas fa-plus mr-1"></i>Simpan</button>
+                </div>
+            </div>`;
+        });
+        if (data.results.length === 0) container.innerHTML = '<p class="text-gray-500 text-center py-12">Tidak ditemukan paper untuk query ini.</p>';
+    })
+    .catch(e => { document.getElementById('loading').classList.add('hidden'); alert('Error: ' + e); });
+}
+
+function saveRef(paper) {
+    fetch('/api/references', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({title:paper.title, authors:paper.authors, year:paper.year, doi:paper.doi||'', journal:paper.source||''})
+    }).then(r=>r.json()).then(d=>{
+        if(d.success) alert('Referensi disimpan!');
+        else alert('Error: '+d.error);
+    });
+}
+</script>
+{% endblock %}

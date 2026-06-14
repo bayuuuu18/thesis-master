@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Thesis Master{% endblock %}
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-3xl font-bold text-white">Dashboard</h2>
+    <p class="text-gray-400 mt-1">Pantau progress skripsimu di sini</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-dark-800 rounded-xl p-6 border border-dark-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-sm">Progress Bab</p>
+                <p class="text-3xl font-bold text-primary-400">{{ progress.chapters_progress }}%</p>
+                <p class="text-xs text-gray-500">{{ progress.chapters_completed }}/{{ progress.chapters_total }} selesai</p>
+            </div>
+            <div class="w-12 h-12 bg-primary-900/50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-book-open text-primary-400 text-xl"></i>
+            </div>
+        </div>
+        <div class="mt-3 bg-dark-700 rounded-full h-2">
+            <div class="bg-primary-500 rounded-full h-2" style="width:{{ progress.chapters_progress }}%"></div>
+        </div>
+    </div>
+
+    <div class="bg-dark-800 rounded-xl p-6 border border-dark-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-sm">Total Kata</p>
+                <p class="text-3xl font-bold text-green-400">{{ "{:,}".format(progress.total_words) }}</p>
+                <p class="text-xs text-gray-500">target: {{ "{:,}".format(progress.target_words) }}</p>
+            </div>
+            <div class="w-12 h-12 bg-green-900/50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-font text-green-400 text-xl"></i>
+            </div>
+        </div>
+        <div class="mt-3 bg-dark-700 rounded-full h-2">
+            <div class="bg-green-500 rounded-full h-2" style="width:{{ progress.words_progress }}%"></div>
+        </div>
+    </div>
+
+    <div class="bg-dark-800 rounded-xl p-6 border border-dark-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-sm">Milestone</p>
+                <p class="text-3xl font-bold text-yellow-400">{{ progress.milestones_done }}/{{ progress.milestones_total }}</p>
+                <p class="text-xs text-gray-500">tercapai</p>
+            </div>
+            <div class="w-12 h-12 bg-yellow-900/50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-flag text-yellow-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-dark-800 rounded-xl p-6 border border-dark-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-sm">Todo</p>
+                <p class="text-3xl font-bold text-purple-400">{{ progress.todos_done }}/{{ progress.todos_total }}</p>
+                <p class="text-xs text-gray-500">selesai</p>
+            </div>
+            <div class="w-12 h-12 bg-purple-900/50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-purple-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chapter Progress -->
+<div class="bg-dark-800 rounded-xl border border-dark-700 mb-8">
+    <div class="p-6 border-b border-dark-700">
+        <h3 class="text-lg font-semibold text-white"><i class="fas fa-list-ol mr-2 text-primary-400"></i>Progress Per Bab</h3>
+    </div>
+    <div class="p-6 space-y-4">
+        {% for ch in progress.chapter_details %}
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-400 w-16">Bab {{ ch.number }}</span>
+            <div class="flex-1">
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm text-white">{{ ch.title }}</span>
+                    <span class="text-sm text-gray-400">{{ ch.word_count }}/{{ ch.target_words }} kata ({{ ch.progress }}%)</span>
+                </div>
+                <div class="bg-dark-700 rounded-full h-2">
+                    <div class="rounded-full h-2 {% if ch.status == 'final' %}bg-green-500{% elif ch.status == 'review' %}bg-yellow-500{% else %}bg-primary-500{% endif %}" style="width:{{ ch.progress }}%"></div>
+                </div>
+            </div>
+            <span class="text-xs px-2 py-1 rounded {% if ch.status == 'final' %}bg-green-900/50 text-green-400{% elif ch.status == 'review' %}bg-yellow-900/50 text-yellow-400{% else %}bg-primary-900/50 text-primary-400{% endif %}">{{ ch.status }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Milestones -->
+    <div class="bg-dark-800 rounded-xl border border-dark-700">
+        <div class="p-6 border-b border-dark-700">
+            <h3 class="text-lg font-semibold text-white"><i class="fas fa-flag mr-2 text-yellow-400"></i>Milestone Mendatang</h3>
+        </div>
+        <div class="p-6">
+            {% if milestones %}
+            <div class="space-y-3">
+                {% for m in milestones %}
+                <div class="flex items-center gap-3 p-3 bg-dark-700 rounded-lg">
+                    <input type="checkbox" class="w-4 h-4 rounded" onchange="completeMilestone({{ m.id }})">
+                    <div class="flex-1">
+                        <p class="text-sm text-white">{{ m.title }}</p>
+                        <p class="text-xs text-gray-500">Deadline: {{ m.due_date }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-sm">Belum ada milestone. Tambahkan di CLI!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Todos -->
+    <div class="bg-dark-800 rounded-xl border border-dark-700">
+        <div class="p-6 border-b border-dark-700 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-white"><i class="fas fa-tasks mr-2 text-purple-400"></i>Todo List</h3>
+            <button onclick="showAddTodo()" class="text-sm bg-primary-600 hover:bg-primary-700 px-3 py-1 rounded-lg text-white">
+                <i class="fas fa-plus mr-1"></i>Tambah
+            </button>
+        </div>
+        <div class="p-6">
+            <div id="todo-list" class="space-y-2">
+                {% for t in todos %}
+                <div class="flex items-center gap-3 p-3 bg-dark-700 rounded-lg" id="todo-{{ t.id }}">
+                    <input type="checkbox" class="w-4 h-4 rounded" onchange="completeTodo({{ t.id }})">
+                    <div class="flex-1">
+                        <p class="text-sm text-white">{{ t.task }}</p>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded {% if t.priority == 'high' %}bg-red-900/50 text-red-400{% elif t.priority == 'medium' %}bg-yellow-900/50 text-yellow-400{% else %}bg-gray-700 text-gray-400{% endif %}">{{ t.priority }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <!-- Add Todo Form (hidden) -->
+            <div id="add-todo-form" class="hidden mt-4 space-y-3">
+                <input type="text" id="todo-task" placeholder="Tugas baru..." class="w-full bg-dark-700 border border-dark-700 rounded-lg px-4 py-2 text-white text-sm">
+                <div class="flex gap-2">
+                    <select id="todo-priority" class="bg-dark-700 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    <input type="date" id="todo-date" class="bg-dark-700 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white">
+                    <button onclick="addTodo()" class="bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg text-white text-sm">Simpan</button>
+                    <button onclick="showAddTodo()" class="bg-dark-700 px-4 py-2 rounded-lg text-gray-400 text-sm">Batal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showAddTodo() { document.getElementById('add-todo-form').classList.toggle('hidden'); }
+function addTodo() {
+    const task = document.getElementById('todo-task').value;
+    if (!task) return;
+    fetch('/api/todos', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({task, priority: document.getElementById('todo-priority').value, due_date: document.getElementById('todo-date').value||null})
+    }).then(r=>r.json()).then(d=>{ if(d.success) location.reload(); });
+}
+function completeTodo(id) {
+    fetch(`/api/todos/${id}/complete`, {method:'POST'}).then(r=>r.json()).then(d=>{
+        if(d.success) document.getElementById(`todo-${id}`).remove();
+    });
+}
+function completeMilestone(id) { fetch(`/api/milestones/${id}/complete`, {method:'POST'}); }
+</script>
+{% endblock %}

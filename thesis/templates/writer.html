@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Penulis — Thesis Master{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <div>
+        <h2 class="text-3xl font-bold text-white">Penulis</h2>
+        <p class="text-gray-400 mt-1">Tulis dan kelola bab skripsimu</p>
+    </div>
+    <div class="flex gap-3">
+        <select id="chapter-select" onchange="loadChapter(this.value)" class="bg-dark-800 border border-dark-700 rounded-lg px-4 py-2 text-white text-sm">
+            {% for ch in chapters %}
+            <option value="{{ ch.id }}">Bab {{ ch.chapter_number }}: {{ ch.title }}</option>
+            {% endfor %}
+        </select>
+        <button onclick="saveChapter()" class="bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg text-white text-sm"><i class="fas fa-save mr-2"></i>Simpan</button>
+        <button onclick="exportThesis('md')" class="bg-dark-700 hover:bg-dark-600 px-4 py-2 rounded-lg text-white text-sm"><i class="fas fa-file-export mr-2"></i>Export MD</button>
+        <button onclick="exportThesis('docx')" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm"><i class="fas fa-file-word mr-2"></i>Export DOCX</button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Chapter List -->
+    <div class="lg:col-span-1">
+        <div class="bg-dark-800 rounded-xl border border-dark-700 p-4">
+            <h3 class="text-sm font-semibold text-gray-400 mb-3">BAB SKRIPSI</h3>
+            <div class="space-y-2">
+                {% for ch in chapters %}
+                <button onclick="selectChapter({{ ch.id }})" class="w-full text-left p-3 rounded-lg hover:bg-dark-700 chapter-btn {% if loop.first %}bg-dark-700 border border-primary-500/30{% endif %}" data-id="{{ ch.id }}">
+                    <p class="text-sm text-white font-medium">Bab {{ ch.chapter_number }}</p>
+                    <p class="text-xs text-gray-500">{{ ch.word_count }}/{{ ch.target_words }} kata</p>
+                    <div class="bg-dark-600 rounded-full h-1 mt-2">
+                        <div class="bg-primary-500 rounded-full h-1" style="width:{{ (ch.word_count / ch.target_words * 100)|int }}%"></div>
+                    </div>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Editor -->
+    <div class="lg:col-span-3">
+        <div class="bg-dark-800 rounded-xl border border-dark-700">
+            <div class="p-4 border-b border-dark-700 flex justify-between items-center">
+                <div>
+                    <h3 id="editor-title" class="text-white font-semibold">{{ chapters[0].title if chapters else 'Pilih Bab' }}</h3>
+                    <p id="word-count" class="text-xs text-gray-500">{{ chapters[0].word_count if chapters else 0 }} kata</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="aiParaphrase()" class="bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 px-3 py-1 rounded text-xs" title="Paraphrase dengan AI"><i class="fas fa-magic mr-1"></i>Paraphrase</button>
+                    <button onclick="aiSummarize()" class="bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 px-3 py-1 rounded text-xs" title="Summarize dengan AI"><i class="fas fa-compress mr-1"></i>Summarize</button>
+                </div>
+            </div>
+            <textarea id="editor" class="w-full bg-transparent text-gray-200 p-6 min-h-[500px] focus:outline-none font-serif text-base leading-relaxed resize-none" placeholder="Mulai menulis di sini...">{{ chapters[0].content if chapters else '' }}</textarea>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentChapterId = {{ chapters[0].id if chapters else 'null' }};
+
+function selectChapter(id) {
+    currentChapterId = id;
+    document.querySelectorAll('.chapter-btn').forEach(b => {
+        b.classList.toggle('bg-dark-700', b.dataset.id == id);
+        b.classList.toggle('border', b.dataset.id == id);
+        b.classList.toggle('border-primary-500/30', b.dataset.id == id);
+    });
+    loadChapter(id);
+}
+
+function loadChapter(id) {
+    currentChapterId = id;
+    fetch(`/api/chapters`).then(r=>r.json()).then(d=>{
+        const ch = d.chapters.find(c=>c.id==id);
+        if(ch) {
+            document.getElementById('editor').value = ch.content || '';
+            document.getElementById('editor-title').textContent = ch.title;
+            document.getElementById('word-count').textContent = (ch.content||'').split(/\s+/).filter(w=>w).length + ' kata';
+        }
+    });
+}
+
+function saveChapter() {
+    if(!currentChapterId) return;
+    const content = document.getElementById('editor').value;
+    fetch(`/api/chapters/${currentChapterId}`, {method:'PUT', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({content})
+    }).then(r=>r.json()).then(d=>{ if(d.success) { document.getElementById('word-count').textContent = content.split(/\s+/).filter(w=>w).length + ' kata'; }});
+}
+
+function exportThesis(format) {
+    fetch(`/api/export/${format}`, {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({output: `thesis.${format}`, metadata: {title:'Skripsi', author:'Mahasiswa'}})
+    }).then(r=>r.json()).then(d=>{ if(d.success) alert('Export berhasil: '+d.path); else alert('Error: '+d.error); });
+}
+
+function aiParaphrase() {
+    const editor = document.getElementById('editor');
+    const sel = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+    const text = sel || editor.value;
+    if(!text) return;
+    fetch('/api/ai/paraphrase', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text})})
+    .then(r=>r.json()).then(d=>{ if(d.success) { if(sel) { editor.setRangeText(d.result, editor.selectionStart, editor.selectionEnd); } else { editor.value = d.result; } } else alert('Error: '+d.error); });
+}
+
+function aiSummarize() {
+    const editor = document.getElementById('editor');
+    const text = editor.value;
+    if(!text) return;
+    fetch('/api/ai/summarize', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text})})
+    .then(r=>r.json()).then(d=>{ if(d.success) alert('Summary:\n\n'+d.summary); else alert('Error: '+d.error); });
+}
+
+// Auto-save every 30 seconds
+setInterval(saveChapter, 30000);
+</script>
+{% endblock %}

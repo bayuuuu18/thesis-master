@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Referensi — Thesis Master{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <div>
+        <h2 class="text-3xl font-bold text-white">Referensi</h2>
+        <p class="text-gray-400 mt-1">Kelola semua referensi skripsimu</p>
+    </div>
+    <div class="flex gap-3">
+        <button onclick="document.getElementById('importModal').classList.remove('hidden')" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm"><i class="fas fa-file-import mr-2"></i>Import BibTeX</button>
+        <button onclick="exportBibtex()" class="bg-dark-700 hover:bg-dark-600 px-4 py-2 rounded-lg text-white text-sm"><i class="fas fa-file-export mr-2"></i>Export BibTeX</button>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="mb-6">
+    <input type="text" id="ref-search" placeholder="Cari referensi..." oninput="filterRefs(this.value)"
+        class="w-full bg-dark-800 border border-dark-700 rounded-xl px-5 py-3 text-white focus:border-primary-500 focus:outline-none">
+</div>
+
+<!-- Reference List -->
+<div id="ref-list" class="space-y-3">
+    {% for ref in references %}
+    <div class="bg-dark-800 rounded-xl border border-dark-700 p-5 ref-card" data-search="{{ (ref.title ~ ' ' ~ ref.authors ~ ' ' ~ ref.year)|lower }}">
+        <div class="flex justify-between items-start">
+            <div class="flex-1">
+                <h4 class="text-white font-medium">{{ ref.title }}</h4>
+                <p class="text-gray-400 text-sm mt-1">{{ ref.authors }} ({{ ref.year }})</p>
+                {% if ref.journal %}<p class="text-gray-500 text-xs mt-1"><i>{{ ref.journal }}</i></p>{% endif %}
+                {% if ref.doi %}<p class="text-primary-400 text-xs mt-1">DOI: {{ ref.doi }}</p>{% endif %}
+            </div>
+            <div class="flex gap-2">
+                <button onclick="citeRef('{{ ref.doi }}')" class="text-primary-400 hover:text-primary-300 text-sm"><i class="fas fa-quote-right"></i></button>
+                <button onclick="deleteRef({{ ref.id }})" class="text-red-400 hover:text-red-300 text-sm"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Import Modal -->
+<div id="importModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-dark-800 rounded-xl p-6 w-full max-w-lg border border-dark-700">
+        <h3 class="text-lg font-semibold text-white mb-4">Import BibTeX</h3>
+        <textarea id="bibtex-input" rows="10" class="w-full bg-dark-700 border border-dark-700 rounded-lg px-4 py-3 text-white text-sm font-mono" placeholder="Paste BibTeX di sini..."></textarea>
+        <div class="flex justify-end gap-3 mt-4">
+            <button onclick="document.getElementById('importModal').classList.add('hidden')" class="px-4 py-2 text-gray-400">Batal</button>
+            <button onclick="importBibtex()" class="bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg text-white">Import</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterRefs(q) {
+    q = q.toLowerCase();
+    document.querySelectorAll('.ref-card').forEach(c => {
+        c.style.display = c.dataset.search.includes(q) ? '' : 'none';
+    });
+}
+function deleteRef(id) {
+    if (!confirm('Hapus referensi ini?')) return;
+    fetch(`/api/references/${id}`, {method:'DELETE'}).then(r=>r.json()).then(d=>{ if(d.success) location.reload(); });
+}
+function citeRef(doi) {
+    fetch('/api/cite', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({doi, style:'apa'})})
+    .then(r=>r.json()).then(d=>{ if(d.success) navigator.clipboard.writeText(d.citation); alert('Disalin!'); });
+}
+function importBibtex() { alert('Feature coming soon!'); }
+function exportBibtex() { window.location.href = '/api/export/bib'; }
+</script>
+{% endblock %}
